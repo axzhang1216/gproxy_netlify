@@ -1,1 +1,0 @@
-import{t as e}from"./react-vendor-CVaUQXZF.js";import{Pn as t}from"./vendor-Jauwn4MH.js";import{t as n}from"./app-shell-CtP5674y.js";var r=e();function i(){return(0,r.jsx)(n,{children:(0,r.jsx)(t,{})})}export{i as component};
