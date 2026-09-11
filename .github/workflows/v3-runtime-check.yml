@@ -1,0 +1,25 @@
+name: Check v3 runtime
+
+on:
+  push:
+    branches: [v3-netlify]
+    paths:
+      - '.github/workflows/v3-runtime-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check admin session endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://gproxy-v3-test.netlify.app/admin/api/session'
+          code="$(curl -sS -o /tmp/body -w '%{http_code}' "$url")"
+          echo "HTTP $code"
+          cat /tmp/body
+          echo
+          test "$code" = '200'
