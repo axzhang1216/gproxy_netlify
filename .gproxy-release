@@ -1,0 +1,4 @@
+version=v3.0.12
+asset=gproxy-edge-netlify.zip
+sha256=4fa7a0906c96997e497af5e72d5526613a14822070058a39995cc74e2d14d41f
+source=https://github.com/LeenHawk/gproxy/releases/tag/v3.0.12
