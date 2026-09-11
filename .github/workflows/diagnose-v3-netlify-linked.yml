@@ -1,0 +1,27 @@
+name: Diagnose linked v3 Netlify build
+
+on:
+  push:
+    branches: [v3-netlify]
+    paths:
+      - '.github/workflows/diagnose-v3-netlify-linked.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Link test site locally
+        run: |
+          mkdir -p .netlify
+          printf '%s\n' '{"siteId":"4b85ada2-e4c2-4f2f-998f-47ad2addc982"}' > .netlify/state.json
+      - name: Install Netlify build dependencies
+        run: npm install --ignore-scripts --no-package-lock
+      - name: Reproduce linked Netlify build
+        run: npx netlify build
