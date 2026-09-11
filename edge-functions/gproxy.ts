@@ -1,6 +1,6 @@
 import type { Context } from "@netlify/edge-functions"
-import init, { EdgeConfig, start } from "../pkg/gproxy_host_edge.js"
-import { wasmBase64 } from "./gproxy_wasm_inline"
+import init, { EdgeConfig, start } from "./_lib/gproxy_host_edge.js"
+import { wasmBase64 } from "./_lib/gproxy_wasm_inline.ts"
 
 let wasmReady: ReturnType<typeof init> | undefined
 let hostPromise: ReturnType<typeof start> | undefined
