@@ -37,3 +37,5 @@ jobs:
           console.log(result)
           NODE
           find .netlify/edge-functions-dist -maxdepth 2 -type f -printf '%p %k KB\n' | sort
+
+# rerun after extensionless generated-module import fix
