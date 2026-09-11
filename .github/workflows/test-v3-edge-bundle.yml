@@ -1,0 +1,39 @@
+name: Test v3 Edge bundle
+
+on:
+  push:
+    branches: [v3-netlify]
+    paths:
+      - '.github/workflows/test-v3-edge-bundle.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install bundler dependencies
+        run: npm install --ignore-scripts --no-package-lock @netlify/edge-bundler@16.0.3
+      - name: Generate inline WASM module
+        run: |
+          node scripts/inline-netlify-wasm.mjs
+          ls -lh pkg/gproxy_host_edge_bg.wasm edge-functions/gproxy_wasm_inline.ts
+      - name: Type check edge entry
+        run: npx tsc --noEmit
+      - name: Bundle edge function
+        run: |
+          node --input-type=module <<'NODE'
+          import { bundle } from '@netlify/edge-bundler'
+          import { resolve } from 'node:path'
+          const sourceDirectories = [resolve('edge-functions')]
+          const distDirectory = resolve('.netlify/edge-functions-dist')
+          const declarations = [{ function: 'gproxy', path: '/*' }]
+          const result = await bundle(sourceDirectories, distDirectory, declarations)
+          console.log(result)
+          NODE
+          find .netlify/edge-functions-dist -maxdepth 2 -type f -printf '%p %k KB\n' | sort
