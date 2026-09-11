@@ -1,0 +1,107 @@
+name: Bootstrap gproxy v3.0.12 Netlify bundle
+
+on:
+  push:
+    branches:
+      - v3-netlify
+    paths:
+      - ".github/workflows/bootstrap-v3-netlify.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout v3 deployment branch
+        uses: actions/checkout@v4
+        with:
+          ref: v3-netlify
+          fetch-depth: 0
+
+      - name: Download and stage official v3.0.12 Netlify bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          VERSION="v3.0.12"
+          EXPECTED_SHA256="4fa7a0906c96997e497af5e72d5526613a14822070058a39995cc74e2d14d41f"
+          URL="https://github.com/LeenHawk/gproxy/releases/download/${VERSION}/gproxy-edge-netlify.zip"
+
+          tmp_dir="$(mktemp -d)"
+          bundle="$tmp_dir/gproxy-edge-netlify.zip"
+          extract="$tmp_dir/extract"
+          mkdir -p "$extract"
+
+          curl --fail --location --retry 3 --output "$bundle" "$URL"
+          printf '%s  %s\n' "$EXPECTED_SHA256" "$bundle" | sha256sum --check --strict
+          unzip -q "$bundle" -d "$extract"
+
+          if [ -f "$extract/netlify/netlify.toml" ]; then
+            src="$extract/netlify"
+          elif [ -f "$extract/netlify.toml" ]; then
+            src="$extract"
+          else
+            echo "Could not locate netlify.toml in release bundle" >&2
+            find "$extract" -maxdepth 3 -type f -print >&2
+            exit 1
+          fi
+
+          # Replace the inherited v2 deployment tree completely. The current
+          # running workflow remains in memory even though its file is removed.
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a "$src"/. .
+
+          test -f netlify.toml
+          test -d edge-functions
+          test -d pkg
+          test -d public
+
+          # This is a prebuilt release bundle. Do not make Netlify rebuild Rust/WASM.
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("netlify.toml")
+          text = path.read_text()
+          text = re.sub(r'^\s*command\s*=\s*["\']pnpm run build["\']\s*\n?', '', text, flags=re.M)
+          path.write_text(text)
+          PY
+
+          cat > .gproxy-release <<EOF
+          version=${VERSION}
+          asset=gproxy-edge-netlify.zip
+          sha256=${EXPECTED_SHA256}
+          source=https://github.com/LeenHawk/gproxy/releases/tag/${VERSION}
+          EOF
+
+          cat > DEPLOYMENT.md <<'EOF'
+          # GPROXY Netlify deployment
+
+          This branch contains the official prebuilt **GPROXY v3.0.12** Netlify Edge bundle.
+
+          It is pinned intentionally. Netlify should deploy the files in this branch directly; Rust/WASM compilation is disabled because `pkg/` and `public/` are official release artifacts.
+
+          Required Netlify environment variables:
+
+          - `GPROXY_LIBSQL_URL`
+          - `GPROXY_LIBSQL_AUTH_TOKEN`
+
+          Optional:
+
+          - `GPROXY_MASTER_KEY`
+          - `UPSTASH_URL` and `UPSTASH_TOKEN` (set both or neither)
+
+          The previous v2 deployment remains available on the `deploy` branch for rollback.
+          EOF
+
+      - name: Commit pinned v3 bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "deploy: pin official gproxy v3.0.12 Netlify bundle"
+          git push origin HEAD:v3-netlify
