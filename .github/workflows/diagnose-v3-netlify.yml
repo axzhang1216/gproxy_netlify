@@ -1,0 +1,23 @@
+name: Diagnose v3 Netlify build
+
+on:
+  push:
+    branches: [v3-netlify]
+    paths:
+      - '.github/workflows/diagnose-v3-netlify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Netlify build dependencies
+        run: npm install --ignore-scripts --no-package-lock
+      - name: Reproduce Netlify build
+        run: npx netlify build
