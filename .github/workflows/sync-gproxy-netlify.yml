@@ -64,12 +64,24 @@ jobs:
           test -f "$bundle_root/netlify.toml"
           test -d "$bundle_root/edge-functions"
           test -d "$bundle_root/public"
+          test -f "$bundle_root/pkg/gproxy_host_edge_bg.wasm"
 
           rsync -a --delete \
             --exclude='.git/' \
             --exclude='.github/' \
             --exclude='.gproxy-upstream' \
             "$bundle_root/" ./
+
+          # Release bundles are prebuilt. Upstream docs require removing the
+          # source-build command so Netlify uses pkg/ and public/ as shipped.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("netlify.toml")
+          s = p.read_text()
+          s = s.replace('[build]\ncommand = "pnpm run build"\npublish = "public"\nedge_functions = "edge-functions"\n',
+                        'publish = "public"\nedge_functions = "edge-functions"\n')
+          p.write_text(s)
+          PY
 
           printf '%s\n' "$release_tag" > .gproxy-upstream
           printf 'UPSTREAM_RELEASE=%s\n' "$release_tag" >> "$GITHUB_ENV"
