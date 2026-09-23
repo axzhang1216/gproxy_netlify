@@ -1,5 +1,5 @@
 [build]
-command = "pnpm run build"
+command = "test -f pkg/gproxy_host_edge_bg.wasm && test -f public/index.html"
 publish = "public"
 edge_functions = "edge-functions"
 
