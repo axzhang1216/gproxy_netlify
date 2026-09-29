@@ -51,6 +51,12 @@ jobs:
           printf 'UPSTREAM_SHA=%s\n' "$upstream_sha" >> "$GITHUB_ENV"
           printf 'UPSTREAM_MSG=%s\n' "$upstream_msg" >> "$GITHUB_ENV"
 
+      - name: Apply local Netlify patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          node .github/scripts/patch-gproxy-timeout.mjs
+
       - name: Commit upstream changes
         shell: bash
         run: |

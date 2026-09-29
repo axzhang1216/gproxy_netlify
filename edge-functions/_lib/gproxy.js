@@ -616,7 +616,17 @@ function __wbg_get_imports() {
             return addHeapObject(ret);
         },
         __wbg_timeout_e42525a949868363: function(arg0) {
-            const ret = AbortSignal.timeout(arg0);
+            // Local Netlify compatibility patch: GPROXY v2.9.x can pass a
+            // 60,000 ms upstream total timeout. Grok Responses may stream
+            // longer than one minute, so extend only that exact timeout.
+            const effectiveTimeout = arg0 === 60000 ? 300000 : arg0;
+            if (effectiveTimeout !== arg0) {
+                console.warn("[gproxy-netlify] extending upstream fetch timeout", {
+                    requestedMs: arg0,
+                    effectiveMs: effectiveTimeout,
+                });
+            }
+            const ret = AbortSignal.timeout(effectiveTimeout);
             return addHeapObject(ret);
         },
         __wbg_url_3e90676c7072325d: function(arg0, arg1) {
