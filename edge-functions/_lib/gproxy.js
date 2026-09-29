@@ -616,7 +616,18 @@ function __wbg_get_imports() {
             return addHeapObject(ret);
         },
         __wbg_timeout_e42525a949868363: function(arg0) {
-            const ret = AbortSignal.timeout(arg0);
+            // Netlify hotfix: GPROXY v2.9.10 currently passes a 60s total timeout
+            // for some upstream fetches. Grok Responses can legitimately stream
+            // beyond that, so only extend the exact 60,000ms case. Keep every
+            // other timeout untouched so provider-specific policies still apply.
+            const effectiveTimeout = arg0 === 60000 ? 300000 : arg0;
+            if (effectiveTimeout !== arg0) {
+                console.warn("[gproxy-netlify] extending upstream fetch timeout", {
+                    requestedMs: arg0,
+                    effectiveMs: effectiveTimeout,
+                });
+            }
+            const ret = AbortSignal.timeout(effectiveTimeout);
             return addHeapObject(ret);
         },
         __wbg_url_3e90676c7072325d: function(arg0, arg1) {
